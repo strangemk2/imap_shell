@@ -6,14 +6,20 @@ import imaplib
 
 def idle(connection):
     tag = connection._new_tag()
-    connection.send("%s IDLE\r\n" % tag)
-    response = connection.readline()
+    cmd = "%s IDLE" % tag
+    connection.send("%s\r\n" % cmd)
+    if __debug__:
+        if connection.debug >= 3:
+            connection._mesg("> %s" % cmd);
+
+    response = connection._get_line()
     connection.loop = True
-    if response == '+ idling\r\n':
+    if response == '+ idling':
         while connection.loop:
-            resp = connection.readline()
-            uid, message = resp[2:-2].split(' ')
-            yield uid, message
+            resp = connection._get_line()
+            if resp.find("RECENT") != -1:
+                new, message = resp[2:].split(' ')
+                yield new
     else:
         raise Exception("IDLE not handled? : %s" % response)
 

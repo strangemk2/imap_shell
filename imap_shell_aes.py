@@ -24,14 +24,14 @@ class imap_shell_aes:
         for r in alignment_read(data, 16):
             ciphertext = ciphertext + aes.encrypt(r)
 
-        return base64.b64encode(pickle.dumps(
+        return base64.b64encode(zlib.compress(pickle.dumps(
                 {'len'        : length,
                  'iv'         : iv,
                  'ciphertext' : ciphertext,
-                 'hash'       : hashlib.md5(data).hexdigest()}))
+                 'hash'       : hashlib.md5(data).hexdigest()})))
 
     def decrypt(self, data):
-        encrypted_data = pickle.loads(base64.b64decode(data))
+        encrypted_data = pickle.loads(zlib.decompress(base64.b64decode(data)))
         aes = pyaes.AESModeOfOperationCBC(self.key, iv = encrypted_data['iv'])
         decrypted = ''
         for r in alignment_read(encrypted_data['ciphertext'], 16):

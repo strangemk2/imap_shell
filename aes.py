@@ -34,11 +34,15 @@ class imap_shell_aes:
         encrypted_data = pickle.loads(zlib.decompress(base64.b64decode(data)))
         aes = pyaes.AESModeOfOperationCBC(self.key, iv = encrypted_data['iv'])
         decrypted = ''
+        length = encrypted_data['len']
         for r in alignment_read(encrypted_data['ciphertext'], 16):
-            decrypted = decrypted + aes.decrypt(r)
+            length -= 16
+            if length < 0:
+                decrypted = decrypted + aes.decrypt(r)[:length]
+            else:
+                decrypted = decrypted + aes.decrypt(r)
 
-        if (len(decrypted) > encrypted_data['len']):
-            decrypted = decrypted[:encrypted_data['len']]
+        assert len(decrypted) == encrypted_data['len']
 
         if hashlib.md5(decrypted).hexdigest() != encrypted_data['hash']:
             raise Exception('Unexpected aes data.')
@@ -58,7 +62,7 @@ def alignment_read(data, size):
 
 if __name__ == '__main__':
     aes = imap_shell_aes('Atadm')
-    plaintext = "alsdkjflkbhiojwhler9023ujiok;kmlzv;xckja;lsdfkj"
+    plaintext = "abcdefghijklmnopqrstuvwxyz"
     res = aes.encrypt(plaintext)
     ori = aes.decrypt(res)
     print plaintext

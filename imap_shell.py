@@ -15,12 +15,16 @@ def client_shell(imap):
         elif cmd == '':
             pass
         else:
-            imap.send()
-            imap.active_wait()
-            imap.sleep_wait()
+            imap.append_ISCP(cmd)
+            imap.active_wait(func)
+            imap.sleep_wait(func)
 
         print "\r> ",
         cmd = sys.stdin.readline()
+
+def client_msg_callback(uid, message):
+    message = imap_shell_aes(config('imap_passwd')).decrypt(message)
+    print('\r%s' % message)
 
 #def server_batch(imap):
 #    if imap.search_imap_shell_messages():
@@ -35,4 +39,4 @@ session = imap_shell({
         'user'    : config('imap_user'),
         'passwd'  : config('imap_passwd'),
         'mailbox' : config('imap_shell_config')})
-#enter_shell(imap)
+client_shell(imap)

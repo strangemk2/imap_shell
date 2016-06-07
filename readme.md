@@ -2,4 +2,4 @@
 
 ## Simple remote shell with public imap servers.
 
-## python
+## Under development

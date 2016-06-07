@@ -51,7 +51,7 @@ class imap_session:
 
     def wait_ISCP(self, func):
         self._active_wait(Imap_shell_client_pattern, func)
-        self._lazy_wait(Imap_shell_client_pattern, func)
+        #self._lazy_wait(Imap_shell_client_pattern, func)
 
     def wait_ISSP(self, func):
         self._active_wait(Imap_shell_server_pattern, func)
@@ -59,10 +59,13 @@ class imap_session:
 
     def _search_messages(self, keyword, func):
         conn = self.connection
+        ret = 0
         typ, data = conn.search(None, 'SUBJECT', keyword, 'NEW')
         for num in data[0].split():
             typ, data = conn.fetch(num, "(BODY[TEXT])")
             func(num, data[0][1])
+            ret += 1
+        return ret
 
     def _search_messages_session(self, keyword, func):
         try:
@@ -70,16 +73,16 @@ class imap_session:
             conn = self.connection
             conn.login(self.user, self.passwd)
             conn.select(self.mailbox)
-            self._search_messages(keyword, func)
+            return self._search_messages(keyword, func)
         finally:
             conn.close()
             conn.logout()
 
-    def recover_ISCP(self, func):
-        self._search_messages_session(Imap_shell_client_pattern, func)
+    def search_ISCP(self, func):
+        return self._search_messages_session(Imap_shell_client_pattern, func)
 
-    def recover_ISSP(self, func):
-        self._search_messages_session(Imap_shell_server_pattern, func)
+    def search_ISSP(self, func):
+        return self._search_messages_session(Imap_shell_server_pattern, func)
 
     def _append_impl(self, subject, message):
         self.connection = imaplib.IMAP4(self.addr, self.port)

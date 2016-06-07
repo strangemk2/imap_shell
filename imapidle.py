@@ -25,6 +25,10 @@ def idle(connection):
 
 
 def done(connection):
+    if __debug__:
+        if connection.debug >= 3:
+            connection._mesg("> %s" % 'DONE');
+
     connection.send("DONE\r\n")
     connection.loop = False
 

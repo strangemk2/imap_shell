@@ -43,7 +43,6 @@ class imap_session:
                 try:
                     with timeout.timeout(seconds = 300):
                         for new_item in conn.idle():
-                            #print "%s new item(s)." % new_item
                             conn.done()
                             if once:
                                 return self._search_messages(keyword, func)

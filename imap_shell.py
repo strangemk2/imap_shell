@@ -51,7 +51,7 @@ def server_process_cmd(cmd):
     except subprocess.CalledProcessError as e:
         ret += str(e)
     except:
-        ret += "Unexcept error.\n"
+        ret += "Unexpected error.\n"
     return ret
 
 

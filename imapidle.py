@@ -17,20 +17,21 @@ def idle(connection):
     if response == '+ idling':
         while connection.loop:
             resp = connection._get_line()
-            if resp.find("RECENT") != -1:
-                new, message = resp[2:].split(' ')
+            if resp.find("* OK") == -1:
+                new, message = resp[2:].split(' ', 1)
                 yield new
     else:
         raise Exception("IDLE not handled? : %s" % response)
 
 
 def done(connection):
-    if __debug__:
-        if connection.debug >= 3:
-            connection._mesg("> %s" % 'DONE');
+    if connection.loop == True:
+        if __debug__:
+            if connection.debug >= 3:
+                connection._mesg("> %s" % 'DONE');
 
-    connection.send("DONE\r\n")
-    connection.loop = False
+        connection.send("DONE\r\n")
+        connection.loop = False
 
 imaplib.IMAP4.idle = idle
 imaplib.IMAP4.done = done

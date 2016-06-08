@@ -9,7 +9,7 @@ import imapidle
 import timeout
 from aes import imap_shell_aes
 
-imaplib.Debug = 5
+imaplib.Debug = 4
 
 Imap_shell_client_pattern = 'ISCP:'
 Imap_shell_server_pattern = 'ISSP:'
@@ -23,11 +23,21 @@ class imap_session:
         self.mailbox = info['mailbox']
         self.account = info['account']
 
-    def _active_wait(self, keyword, func):
+    def __enter__(self):
         self.connection = imaplib.IMAP4(self.addr, self.port)
         conn = self.connection
         conn.login(self.user, self.passwd)
         conn.select(self.mailbox)
+
+        return self
+
+    def __exit__(self, exc_type, exc_value, exc_tb):
+        conn = self.connection
+        conn.close()
+        conn.logout()
+
+    def _active_wait(self, keyword, func, once = False):
+        conn = self.connection
         try:
             while True:
                 try:
@@ -35,64 +45,56 @@ class imap_session:
                         for new_item in conn.idle():
                             #print "%s new item(s)." % new_item
                             conn.done()
-                            self._search_messages(keyword, func)
-                except:
+                            if once:
+                                return self._search_messages(keyword, func)
+                            else:
+                                self._search_messages(keyword, func)
+                except timeout.TimeoutError:
                     #print "timeout."
                     break
+                except:
+                    raise
         finally:
             conn.done()
-            conn.close()
-            conn.logout()
 
     def _lazy_wait(self, keyword, func):
         while True:
             time.sleep(60)
-            self._search_messages_session(keyword, func)
+            ret = self._search_messages(keyword, func)
+            if ret != 0:
+                return ret
 
     def wait_ISCP(self, func):
         self._active_wait(Imap_shell_client_pattern, func)
         #self._lazy_wait(Imap_shell_client_pattern, func)
 
     def wait_ISSP(self, func):
-        self._active_wait(Imap_shell_server_pattern, func)
-        self._lazy_wait(Imap_shell_server_pattern, func)
+        if self._active_wait(Imap_shell_server_pattern, func, once = True) is None:
+            self._lazy_wait(Imap_shell_server_pattern, func)
 
     def _search_messages(self, keyword, func):
         conn = self.connection
         ret = 0
-        typ, data = conn.search(None, 'SUBJECT', keyword, 'NEW')
+        typ, data = conn.search(None, 'SUBJECT', keyword, 'UNSEEN')
         for num in data[0].split():
             typ, data = conn.fetch(num, "(BODY[TEXT])")
+            conn.store(num, '+FLAGS', '\\Seen')
             func(num, data[0][1])
             ret += 1
         return ret
 
-    def _search_messages_session(self, keyword, func):
-        try:
-            self.connection = imaplib.IMAP4(self.addr, self.port)
-            conn = self.connection
-            conn.login(self.user, self.passwd)
-            conn.select(self.mailbox)
-            return self._search_messages(keyword, func)
-        finally:
-            conn.close()
-            conn.logout()
-
     def search_ISCP(self, func):
-        return self._search_messages_session(Imap_shell_client_pattern, func)
+        return self._search_messages(Imap_shell_client_pattern, func)
 
     def search_ISSP(self, func):
-        return self._search_messages_session(Imap_shell_server_pattern, func)
+        return self._search_messages(Imap_shell_server_pattern, func)
 
     def _append_impl(self, subject, message):
-        self.connection = imaplib.IMAP4(self.addr, self.port)
         conn = self.connection
-        conn.login(self.user, self.passwd)
         message = imap_shell_aes(self.passwd).encrypt(message)
         conn.append(self.mailbox, None, None,
                     bytearray(make_email(self.account, self.account, subject, message),
                               'utf8'))
-        conn.logout()
 
     def append_ISCP(self, message):
         """

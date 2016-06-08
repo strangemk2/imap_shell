@@ -2,7 +2,7 @@ import os.path
 import sys
 import os
 import hashlib
-import base64
+import email
 import pickle
 import zlib
 import StringIO
@@ -24,14 +24,14 @@ class imap_shell_aes:
         for r in alignment_read(data, 16):
             ciphertext = ciphertext + aes.encrypt(r)
 
-        return base64.b64encode(zlib.compress(pickle.dumps(
+        return email.base64MIME.encode(zlib.compress(pickle.dumps(
                 {'len'        : length,
                  'iv'         : iv,
                  'ciphertext' : ciphertext,
                  'hash'       : hashlib.md5(data).hexdigest()})))
 
     def decrypt(self, data):
-        encrypted_data = pickle.loads(zlib.decompress(base64.b64decode(data)))
+        encrypted_data = pickle.loads(zlib.decompress(email.base64MIME.decode(data)))
         aes = pyaes.AESModeOfOperationCBC(self.key, iv = encrypted_data['iv'])
         decrypted = ''
         length = encrypted_data['len']

@@ -47,7 +47,7 @@ def server_process_cmd(cmd):
     ret = "C: %s\n" % cmd
     ret += "S: "
     try:
-        ret += subprocess.check_output(cmd, shell=True)
+        ret += subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True)
     except subprocess.CalledProcessError as e:
         ret += str(e)
     except:

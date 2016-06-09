@@ -7,21 +7,46 @@ from aes import imap_shell_aes
 from sig import imap_shell_signal
 from imap import imap_session
 
+SHELL_MODE_NORMAL = 0
+SHELL_MODE_BATCH = 1
+
 def client_shell(session):
     session.search_ISSP(client_msg_callback)
-    print "> ",
+    mode = SHELL_MODE_NORMAL
+    PS = '>'
+    print "%s " % PS,
     cmd = sys.stdin.readline()
     while cmd != "":
         cmd = cmd.rstrip()
-        if cmd == 'quit':
-            break
-        elif cmd == '':
-            pass
+        if mode == SHELL_MODE_NORMAL:
+            if cmd == 'quit':
+                break
+            elif cmd == '':
+                pass
+            elif cmd == 'BEGIN BATCH':
+                PS += '>'
+                batch = ''
+                mode = SHELL_MODE_BATCH
+            else:
+                session.append_ISCP(cmd)
+                session.wait_ISSP(client_msg_callback)
+        elif mode == SHELL_MODE_BATCH:
+            if cmd == 'quit':
+                break
+            elif cmd == '':
+                pass
+            elif cmd == 'END BATCH':
+                PS = PS[0:-1]
+                mode = SHELL_MODE_NORMAL
+                session.append_ISCP(batch)
+                session.wait_ISSP(client_msg_callback)
+            else:
+                batch += cmd
+                batch += "\n"
         else:
-            session.append_ISCP(cmd)
-            session.wait_ISSP(client_msg_callback)
+            raise Exception("Unspecified mode.")
 
-        print "\r> ",
+        print "\r%s " % PS,
         cmd = sys.stdin.readline()
 
 def client_msg_callback(uid, message):
@@ -39,6 +64,7 @@ def server_msg_callback(uid, message):
     fp = StringIO.StringIO(message)
     ret = ''
     for cmd in fp:
+        cmd = cmd.rstrip()
         ret += server_process_cmd(cmd)
 
     session.append_ISSP(ret)

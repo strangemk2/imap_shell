@@ -25,7 +25,7 @@ def client_shell(session):
         cmd = sys.stdin.readline()
 
 def client_msg_callback(uid, message):
-    message = imap_shell_aes(config('imap_passwd')).decrypt(message)
+    message = imap_shell_aes(config('encryption_passwd')).decrypt(message)
     print('\r%s' % message)
 
 
@@ -34,7 +34,7 @@ def server_batch(session):
         session.wait_ISCP(server_msg_callback)
 
 def server_msg_callback(uid, message):
-    message = imap_shell_aes(config('imap_passwd')).decrypt(message)
+    message = imap_shell_aes(config('encryption_passwd')).decrypt(message)
 
     fp = StringIO.StringIO(message)
     ret = ''
@@ -64,6 +64,7 @@ if __name__ == '__main__':
             'user'    : config('imap_user'),
             'passwd'  : config('imap_passwd'),
             'mailbox' : config('imap_shell_mailbox'),
+            'encryption_passwd' : config('encryption_passwd'),
             'account' : config('email_account')}) as session:
         if '-s' in sys.argv:
             server_batch(session)

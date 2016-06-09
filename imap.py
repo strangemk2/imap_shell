@@ -21,6 +21,7 @@ class imap_session:
         self.user = info['user']
         self.passwd = info['passwd']
         self.mailbox = info['mailbox']
+        self.encryption_passwd = info['encryption_passwd']
         self.account = info['account']
 
     def __enter__(self):
@@ -90,7 +91,7 @@ class imap_session:
 
     def _append_impl(self, subject, message):
         conn = self.connection
-        message = imap_shell_aes(self.passwd).encrypt(message)
+        message = imap_shell_aes(self.encryption_passwd).encrypt(message)
         conn.append(self.mailbox, None, None,
                     bytearray(make_email(self.account, self.account, subject, message),
                               'utf8'))

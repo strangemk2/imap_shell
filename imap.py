@@ -1,6 +1,7 @@
 import imaplib
 import os.path
 import time
+import ssl
 
 from email.mime.text import MIMEText
 from datetime import datetime
@@ -25,7 +26,10 @@ class imap_session:
         self.account = info['account']
 
     def __enter__(self):
-        self.connection = imaplib.IMAP4(self.addr, self.port)
+        try:
+            self.connection = imaplib.IMAP4_SSL(self.addr, self.port)
+        except ssl.SSLError:
+            self.connection = imaplib.IMAP4(self.addr, self.port)
         conn = self.connection
         conn.login(self.user, self.passwd)
         conn.select(self.mailbox)
